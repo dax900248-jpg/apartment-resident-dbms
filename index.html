@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apartment Resident Management | DBMS PBL Activity</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Lucide Icons via CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbar for SQL console and tables */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .sql-scroll::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    .sql-scroll::-webkit-scrollbar-thumb {
+      background: #334155;
+    }
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        background: white !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- Top Academic & Project Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between py-3.5 gap-3">
+        <!-- Left: Brand & Project Title -->
+        <div class="flex items-center gap-3.5">
+          <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-700 text-white flex items-center justify-center shadow-md shadow-indigo-200 shrink-0">
+            <i data-lucide="building-2" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <h1 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Apartment Resident Management</h1>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                Sr. No. 50 &bull; DBMS PBL
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Subject: <span class="font-medium text-slate-700">Database Management System (BE03000091)</span> &bull; Sem: <span class="font-medium text-slate-700">3rd CE-1</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Right: Student Info Badge & Action Buttons -->
+        <div class="flex flex-wrap items-center gap-2.5 no-print">
+          <div class="hidden sm:flex flex-col items-end bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
+            <span class="text-xs font-semibold text-slate-800">Dakshkumar Pareshbhai Patel</span>
+            <span class="text-[11px] font-mono text-indigo-600 font-medium">Enrollment: 250020107055</span>
+          </div>
+          <button onclick="openAboutModal()" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition border border-slate-200">
+            <i data-lucide="info" class="w-4 h-4 text-indigo-600"></i>
+            <span>PBL Info</span>
+          </button>
+          <button onclick="openModalForCreate()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm shadow-indigo-200 transition">
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+            <span>Register Resident</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex space-x-1 overflow-x-auto pt-1 -mb-px no-print" aria-label="Tabs">
+        <button onclick="switchTab('directory')" id="tab-directory" class="tab-btn group inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 whitespace-nowrap transition">
+          <i data-lucide="users" class="w-4 h-4"></i>
+          <span>Resident Directory & CRUD</span>
+          <span id="nav-count-badge" class="ml-1 bg-indigo-100 text-indigo-700 py-0.5 px-2 rounded-full text-xs font-bold">0</span>
+        </button>
+        <button onclick="switchTab('sql-console')" id="tab-sql-console" class="tab-btn group inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 whitespace-nowrap transition">
+          <i data-lucide="terminal" class="w-4 h-4"></i>
+          <span>Live SQL Query Log</span>
+          <span id="sql-count-badge" class="ml-1 bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-mono">0</span>
+        </button>
+        <button onclick="switchTab('schema-er')" id="tab-schema-er" class="tab-btn group inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 whitespace-nowrap transition">
+          <i data-lucide="database" class="w-4 h-4"></i>
+          <span>ER Diagram & 3NF Schema</span>
+        </button>
+        <button onclick="switchTab('analytics')" id="tab-analytics" class="tab-btn group inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 whitespace-nowrap transition">
+          <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+          <span>Occupancy Analytics</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- Top Quick KPI Metrics Strip -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Records</p>
+          <p id="kpi-total" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+          <p class="text-[11px] text-emerald-600 font-medium mt-0.5 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Primary Key Indexed
+          </p>
+        </div>
+        <div class="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+          <i data-lucide="users-round" class="w-5 h-5"></i>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Active Residents</p>
+          <p id="kpi-active" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+          <p id="kpi-family-members" class="text-[11px] text-slate-500 font-medium mt-0.5">0 total family members</p>
+        </div>
+        <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+          <i data-lucide="home" class="w-5 h-5"></i>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Owners / Tenants</p>
+          <p id="kpi-ratio" class="text-2xl font-bold text-slate-900 mt-1">0 / 0</p>
+          <p class="text-[11px] text-indigo-600 font-medium mt-0.5">Ownership distribution</p>
+        </div>
+        <div class="w-11 h-11 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center">
+          <i data-lucide="key-round" class="w-5 h-5"></i>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Registered Vehicles</p>
+          <p id="kpi-vehicles" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+          <p class="text-[11px] text-amber-600 font-medium mt-0.5">Parking slots allocated</p>
+        </div>
+        <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+          <i data-lucide="car" class="w-5 h-5"></i>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 1: RESIDENT DIRECTORY & CRUD -->
+    <div id="view-directory" class="tab-view space-y-6">
+      <!-- Search, Filters & DB Utility Toolbar -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-4 no-print">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <!-- Search Input -->
+          <div class="relative flex-1">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input
+              type="text"
+              id="search-input"
+              oninput="handleSearchAndFilter(true)"
+              placeholder="Search by Resident ID, Full Name, Flat No (e.g. A-101), or Phone..."
+              class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+            />
+          </div>
+
+          <!-- Filter Dropdowns -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 lg:w-auto">
+            <select id="filter-block" onchange="handleSearchAndFilter(true)" class="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+              <option value="ALL">All Blocks / Wings</option>
+              <option value="Block A">Block A</option>
+              <option value="Block B">Block B</option>
+              <option value="Block C">Block C</option>
+              <option value="Block D">Block D</option>
+            </select>
+
+            <select id="filter-type" onchange="handleSearchAndFilter(true)" class="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+              <option value="ALL">All Resident Types</option>
+              <option value="Owner">Owner</option>
+              <option value="Tenant">Tenant</option>
+            </select>
+
+            <select id="filter-status" onchange="handleSearchAndFilter(true)" class="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+              <option value="ALL">All Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Moved Out">Moved Out</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Secondary Action Bar: Export & Sample Data Controls -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100">
+          <div class="flex items-center gap-2 text-xs text-slate-500">
+            <span class="inline-flex items-center gap-1 font-mono bg-slate-100 px-2 py-1 rounded-lg text-slate-700">
+              <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-indigo-600"></i>
+              Table: <strong class="text-indigo-700">residents</strong>
+            </span>
+            <span id="filter-result-label">Showing all records</span>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="exportToCSV()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition">
+              <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+              <span>Export CSV</span>
+            </button>
+            <button onclick="exportToJSON()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 transition">
+              <i data-lucide="file-json" class="w-3.5 h-3.5"></i>
+              <span>Export JSON</span>
+            </button>
+            <button onclick="window.print()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition">
+              <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+              <span>Print Report</span>
+            </button>
+            <button onclick="resetSampleData()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              <span>Reset Demo Data</span>
+            </button>
+            <button onclick="confirmClearAll()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              <span>Truncate Table</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resident Data Table Card -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50/90 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <th class="py-3.5 px-4">Resident ID (PK)</th>
+                <th class="py-3.5 px-4">Resident Details</th>
+                <th class="py-3.5 px-4">Flat & Wing</th>
+                <th class="py-3.5 px-4">Type</th>
+                <th class="py-3.5 px-4">Contact Info</th>
+                <th class="py-3.5 px-4">Family & Vehicle</th>
+                <th class="py-3.5 px-4">Status</th>
+                <th class="py-3.5 px-4 text-right no-print">CRUD Actions</th>
+              </tr>
+            </thead>
+            <tbody id="residents-table-body" class="divide-y divide-slate-100 text-sm">
+              <!-- Populated dynamically via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden py-14 px-4 text-center">
+          <div class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+            <i data-lucide="database-zap" class="w-7 h-7"></i>
+          </div>
+          <h3 class="text-base font-semibold text-slate-800">No Resident Records Found</h3>
+          <p class="text-xs text-slate-500 max-w-md mx-auto mt-1">
+            The current query returned 0 rows. Try clearing search filters, registering a new resident, or restoring the sample dataset.
+          </p>
+          <div class="mt-4 flex items-center justify-center gap-2">
+            <button onclick="openModalForCreate()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition">
+              + Add New Resident
+            </button>
+            <button onclick="resetSampleData()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
+              Load Sample Dataset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mini Live SQL Preview Strip at Bottom of Directory -->
+      <div class="bg-slate-900 text-slate-200 rounded-2xl p-4 border border-slate-800 shadow-sm no-print">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-xs font-mono font-semibold text-slate-300">LATEST EXECUTED SQL STATEMENT</span>
+          </div>
+          <button onclick="switchTab('sql-console')" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1">
+            <span>View Full Query Log</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+        <pre id="mini-sql-preview" class="font-mono text-xs text-emerald-400 overflow-x-auto whitespace-pre-wrap">SELECT * FROM residents ORDER BY resident_id ASC;</pre>
+      </div>
+    </div>
+
+    <!-- TAB 2: LIVE SQL QUERY CONSOLE / LOG -->
+    <div id="view-sql-console" class="tab-view hidden space-y-5">
+      <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-lg overflow-hidden">
+        <!-- Terminal Top Bar -->
+        <div class="bg-slate-950 px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5 mr-2">
+              <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+              <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+              <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+            </div>
+            <span class="font-mono text-xs font-semibold text-slate-300">mysql&gt; apartment_db (InnoDB Engine &bull; ACID Compliant)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="runCustomDemoQuery('SELECT block_wing, COUNT(*) AS total_residents FROM residents GROUP BY block_wing;')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-sky-300 border border-slate-700 transition">
+              Run GROUP BY Query
+            </button>
+            <button onclick="runCustomDemoQuery('SELECT resident_id, full_name, flat_number FROM residents WHERE resident_type = \'Owner\' AND status = \'Active\';')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-amber-300 border border-slate-700 transition">
+              Run WHERE Filter
+            </button>
+            <button onclick="clearSqlLogs()" class="px-2.5 py-1 rounded-lg bg-rose-950/60 hover:bg-rose-900/60 text-xs font-mono text-rose-300 border border-rose-800/60 transition">
+              Clear Console
+            </button>
+          </div>
+        </div>
+
+        <!-- SQL Log Stream -->
+        <div id="sql-log-container" class="p-4 h-[460px] overflow-y-auto sql-scroll font-mono text-xs space-y-3">
+          <!-- Logs injected dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: ER DIAGRAM & RELATIONAL SCHEMA (3NF) -->
+    <div id="view-schema-er" class="tab-view hidden space-y-6">
+      <!-- Visual ER Diagram Section -->
+      <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <i data-lucide="network" class="w-5 h-5 text-indigo-600"></i>
+              <span>Entity-Relationship (ER) Model & 3NF Decomposition</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Normalized relational database architecture eliminating transitive dependencies (1NF &rarr; 2NF &rarr; 3NF).</p>
+          </div>
+          <button onclick="copyDDLScript()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition self-start">
+            <i data-lucide="copy" class="w-4 h-4"></i>
+            <span>Copy SQL DDL Script</span>
+          </button>
+        </div>
+
+        <!-- Interactive ER Diagram Cards -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center bg-slate-50 p-5 rounded-2xl border border-slate-200/80">
+          <!-- Entity 1: APARTMENTS -->
+          <div class="bg-white rounded-xl border-2 border-sky-500/40 shadow-sm overflow-hidden">
+            <div class="bg-sky-600 text-white px-4 py-2.5 flex items-center justify-between">
+              <span class="font-mono text-xs font-bold tracking-wide">ENTITY: APARTMENTS</span>
+              <span class="text-[10px] bg-sky-800 px-2 py-0.5 rounded font-mono">Parent Table</span>
+            </div>
+            <ul class="divide-y divide-slate-100 text-xs font-mono p-2">
+              <li class="py-1.5 px-2 flex justify-between"><span class="font-bold text-amber-600">🔑 flat_number</span><span class="text-slate-400">VARCHAR(10) PK</span></li>
+              <li class="py-1.5 px-2 flex justify-between"><span>block_wing</span><span class="text-slate-400">VARCHAR(20)</span></li>
+              <li class="py-1.5 px-2 flex justify-between"><span>floor_no</span><span class="text-slate-400">INT</span></li>
+              <li class="py-1.5 px-2 flex justify-between"><span>bhk_type</span><span class="text-slate-400">ENUM('2BHK','3BHK')</span></li>
+            </ul>
+          </div>
+
+          <!-- Entity 2: RESIDENTS (Central Entity) -->
+          <div class="bg-white rounded-xl border-2 border-indigo-600 shadow-md overflow-hidden ring-4 ring-indigo-50">
+            <div class="bg-indigo-600 text-white px-4 py-2.5 flex items-center justify-between">
+              <span class="font-mono text-xs font-bold tracking-wide">ENTITY: RESIDENTS</span>
+              <span class="text-[10px] bg-indigo-800 px-2 py-0.5 rounded font-mono">Core Table</span>
+            </div>
+            <ul class="divide-y divide-slate-100 text-xs font-mono p-2">
+              <li class="py-1.5 px-2 flex justify-between"><span class="font-bold text-amber-600">🔑 resident_id</span><span class="text-slate-400">VARCHAR(12) PK</span></li>
+              <li class="py-1.5 px-2 flex justify-between"><span class="font-semibold text-sky-600">🔗 flat_number</span><span class="text-slate-400">VARCHAR(10) FK</span></li>
+              <li class="py-1.5 px-2 flex justify-between"><span>full_name</span><span class="text-slate-400">VARCHAR(100) NN</span></li>
+              <li class="py-1.5 px-2 flex justify-between"><span>resident_type</span><span class="text-slate-400">ENUM('Owner','Tenant')</span></li>
+              <li class="py-1.5 px-2 flex justify-between"><span>phone_number</span><span class="text-slate-400">CHAR(10) UNIQUE</span></li>
+              <li class="py-1.5 px-2 flex justify-between"><span>email_address</span><span class="text-slate-400">VARCHAR(120)</span></li>
+              <li class="py-1.5 px-2 flex justify-between"><span>family_members</span><span class="text-slate-400">INT CHECK(&gt;0)</span></li>
+              <li class="py-1.5 px-2 flex justify-between"><span>move_in_date</span><span class="text-slate-400">DATE NOT NULL</span></li>
+              <li class="py-1.5 px-2 flex justify-between"><span>status</span><span class="text-slate-400">ENUM('Active','Moved Out')</span></li>
+            </ul>
+          </div>
+
+          <!-- Entity 3: VEHICLES -->
+          <div class="bg-white rounded-xl border-2 border-emerald-500/40 shadow-sm overflow-hidden">
+            <div class="bg-emerald-600 text-white px-4 py-2.5 flex items-center justify-between">
+              <span class="font-mono text-xs font-bold tracking-wide">ENTITY: VEHICLES</span>
+              <span class="text-[10px] bg-emerald-800 px-2 py-0.5 rounded font-mono">Child (0..N)</span>
+            </div>
+            <ul class="divide-y divide-slate-100 text-xs font-mono p-2">
+              <li class="py-1.5 px-2 flex justify-between"><span class="font-bold text-amber-600">🔑 vehicle_number</span><span class="text-slate-400">VARCHAR(15) PK</span></li>
+              <li class="py-1.5 px-2 flex justify-between"><span class="font-semibold text-indigo-600">🔗 resident_id</span><span class="text-slate-400">VARCHAR(12) FK</span></li>
+              <li class="py-1.5 px-2 flex justify-between"><span>vehicle_type</span><span class="text-slate-400">VARCHAR(20)</span></li>
+              <li class="py-1.5 px-2 flex justify-between"><span>parking_slot</span><span class="text-slate-400">VARCHAR(10)</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Relationship Cardinality Legend -->
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+          <div class="p-3 rounded-xl bg-sky-50 border border-sky-100 text-sky-900">
+            <strong>1 : N Relationship (APARTMENTS &rarr; RESIDENTS):</strong> One apartment flat can house one or multiple registered residents over time.
+          </div>
+          <div class="p-3 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-900">
+            <strong>1 : N Relationship (RESIDENTS &rarr; VEHICLES):</strong> Each resident may register zero or more personal vehicles linked via Foreign Key <code class="font-mono">resident_id</code>.
+          </div>
+          <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-900">
+            <strong>3NF Compliance:</strong> All non-key attributes depend strictly on the Primary Key (<code class="font-mono">resident_id</code>), avoiding partial or transitive dependencies.
+          </div>
+        </div>
+      </div>
+
+      <!-- Relational Schema & DDL Script Display -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Constraints Table -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+          <h3 class="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
+            <span>Data Dictionary & Integrity Constraints</span>
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-slate-500">
+                  <th class="py-2 px-3">Column</th>
+                  <th class="py-2 px-3">Data Type</th>
+                  <th class="py-2 px-3">Constraint</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-mono">
+                <tr><td class="py-2 px-3 font-semibold text-indigo-700">resident_id</td><td class="py-2 px-3">VARCHAR(12)</td><td class="py-2 px-3"><span class="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">PRIMARY KEY</span></td></tr>
+                <tr><td class="py-2 px-3 font-semibold">full_name</td><td class="py-2 px-3">VARCHAR(100)</td><td class="py-2 px-3"><span class="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">NOT NULL</span></td></tr>
+                <tr><td class="py-2 px-3 font-semibold">flat_number</td><td class="py-2 px-3">VARCHAR(10)</td><td class="py-2 px-3"><span class="bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded">FOREIGN KEY</span></td></tr>
+                <tr><td class="py-2 px-3 font-semibold">block_wing</td><td class="py-2 px-3">VARCHAR(20)</td><td class="py-2 px-3"><span class="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">NOT NULL</span></td></tr>
+                <tr><td class="py-2 px-3 font-semibold">resident_type</td><td class="py-2 px-3">ENUM</td><td class="py-2 px-3"><span class="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">CHECK ('Owner','Tenant')</span></td></tr>
+                <tr><td class="py-2 px-3 font-semibold">phone_number</td><td class="py-2 px-3">CHAR(10)</td><td class="py-2 px-3"><span class="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">UNIQUE, NOT NULL</span></td></tr>
+                <tr><td class="py-2 px-3 font-semibold">family_members</td><td class="py-2 px-3">INT</td><td class="py-2 px-3"><span class="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">CHECK (count &gt;= 1)</span></td></tr>
+                <tr><td class="py-2 px-3 font-semibold">status</td><td class="py-2 px-3">ENUM</td><td class="py-2 px-3"><span class="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">DEFAULT 'Active'</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SQL DDL Code Box -->
+        <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-sm flex flex-col">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="file-code-2" class="w-4 h-4 text-indigo-400"></i>
+              <span>SQL DDL Schema Definition</span>
+            </h3>
+            <button onclick="copyDDLScript()" class="text-xs font-mono text-indigo-400 hover:text-indigo-300">Copy SQL</button>
+          </div>
+          <pre id="ddl-code-block" class="font-mono text-xs text-slate-300 overflow-x-auto leading-relaxed flex-1">CREATE DATABASE IF NOT EXISTS apartment_db;
+USE apartment_db;
+
+CREATE TABLE residents (
+  resident_id VARCHAR(12) PRIMARY KEY,
+  full_name VARCHAR(100) NOT NULL,
+  flat_number VARCHAR(10) NOT NULL,
+  block_wing ENUM('Block A','Block B','Block C','Block D') NOT NULL,
+  resident_type ENUM('Owner','Tenant') NOT NULL,
+  phone_number CHAR(10) UNIQUE NOT NULL,
+  email_address VARCHAR(120),
+  family_members INT NOT NULL CHECK (family_members >= 1),
+  vehicle_number VARCHAR(15) DEFAULT NULL,
+  move_in_date DATE NOT NULL,
+  emergency_contact CHAR(10) NOT NULL,
+  status ENUM('Active','Moved Out') DEFAULT 'Active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: OCCUPANCY ANALYTICS -->
+    <div id="view-analytics" class="tab-view hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Block-wise Occupancy Breakdown -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+          <h3 class="text-base font-bold text-slate-900 mb-1">Block / Wing Occupancy Distribution</h3>
+          <p class="text-xs text-slate-500 mb-5">Aggregated via <code class="font-mono bg-slate-100 px-1.5 py-0.5 rounded">SELECT block_wing, COUNT(*) FROM residents GROUP BY block_wing</code></p>
+          <div id="block-chart-container" class="space-y-4">
+            <!-- Bars rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Ownership & Status Breakdown -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <h3 class="text-base font-bold text-slate-900 mb-1">Resident Classification & Status</h3>
+            <p class="text-xs text-slate-500 mb-5">Live breakdown of Owners vs. Tenants and Active vs. Moved Out records.</p>
+            <div id="type-chart-container" class="space-y-5">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-slate-100 bg-indigo-50/60 rounded-xl p-4">
+            <p class="text-xs font-semibold text-indigo-900">DBMS Viva Highlight:</p>
+            <p class="text-xs text-indigo-700 mt-1">
+              All summary cards and progress charts compute real-time aggregate functions (<code class="font-mono">COUNT()</code>, <code class="font-mono">SUM(family_members)</code>, <code class="font-mono">GROUP BY</code>) directly from the persisted dataset.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Academic Footer -->
+  <footer class="bg-white border-t border-slate-200 mt-auto py-4">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+      <div>
+        <strong class="text-slate-700">Department of Computer Engineering</strong> &bull; PBL Activity Sheet (Activity - 3: Application Software Development)
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <span>Submitted by: <strong class="text-slate-800">Dakshkumar Pareshbhai Patel</strong> (<span class="font-mono text-indigo-600">250020107055</span>)</span>
+        <span class="hidden sm:inline">&bull;</span>
+        <span>Faculty: <strong class="text-slate-800">Prof. Khushbuben Oza</strong></span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL 1: CREATE / UPDATE RESIDENT FORM -->
+  <div id="resident-modal" class="fixed inset-0 z-40 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+        <div>
+          <h3 id="modal-title" class="text-base font-bold text-slate-900">Register New Apartment Resident</h3>
+          <p id="modal-subtitle" class="text-xs text-slate-500 mt-0.5">Executes <code class="font-mono text-indigo-600">INSERT INTO residents</code> with constraint validation</p>
+        </div>
+        <button onclick="closeResidentModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Form Body -->
+      <form id="resident-form" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4">
+        <input type="hidden" id="edit-mode-id" value="" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- Resident ID -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Resident ID (PK) <span class="text-rose-500">*</span></label>
+            <input type="text" id="field-id" required placeholder="RES-101" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+          </div>
+
+          <!-- Full Name -->
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Full Name <span class="text-rose-500">*</span></label>
+            <input type="text" id="field-name" required placeholder="e.g., Dakshkumar Patel" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- Block / Wing -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Block / Wing <span class="text-rose-500">*</span></label>
+            <select id="field-block" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+              <option value="Block A">Block A</option>
+              <option value="Block B">Block B</option>
+              <option value="Block C">Block C</option>
+              <option value="Block D">Block D</option>
+            </select>
+          </div>
+
+          <!-- Flat Number -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Flat / Apt No. <span class="text-rose-500">*</span></label>
+            <input type="text" id="field-flat" required placeholder="e.g., A-101" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+          </div>
+
+          <!-- Resident Type -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Resident Type <span class="text-rose-500">*</span></label>
+            <select id="field-type" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+              <option value="Owner">Owner</option>
+              <option value="Tenant">Tenant</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Phone Number -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Phone Number (10-digit UNIQUE) <span class="text-rose-500">*</span></label>
+            <input type="tel" id="field-phone" required maxlength="10" pattern="[0-9]{10}" placeholder="9876543210" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+          </div>
+
+          <!-- Email Address -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
+            <input type="email" id="field-email" placeholder="resident@example.com" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- Family Members Count -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Family Members <span class="text-rose-500">*</span></label>
+            <input type="number" id="field-family" required min="1" max="20" value="3" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+          </div>
+
+          <!-- Vehicle Number -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Vehicle No. (Optional)</label>
+            <input type="text" id="field-vehicle" placeholder="GJ-01-AB-1234" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+          </div>
+
+          <!-- Move-in Date -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Move-in Date <span class="text-rose-500">*</span></label>
+            <input type="date" id="field-date" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Emergency Contact -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Emergency Contact (10-digit) <span class="text-rose-500">*</span></label>
+            <input type="tel" id="field-emergency" required maxlength="10" pattern="[0-9]{10}" placeholder="9825012345" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+          </div>
+
+          <!-- Status -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Residency Status <span class="text-rose-500">*</span></label>
+            <select id="field-status" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+              <option value="Active">Active</option>
+              <option value="Moved Out">Moved Out</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
+          <button type="button" onclick="closeResidentModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+            Cancel
+          </button>
+          <button type="submit" id="submit-btn-label" class="px-5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition">
+            Save Resident Record
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: VIEW RESIDENT PROFILE MODAL -->
+  <div id="profile-modal" class="fixed inset-0 z-40 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="bg-gradient-to-r from-indigo-600 to-violet-700 px-6 py-5 text-white flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div id="profile-avatar" class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-lg font-bold">
+            DP
+          </div>
+          <div>
+            <span id="profile-id-badge" class="text-[11px] font-mono bg-white/20 px-2 py-0.5 rounded">RES-101</span>
+            <h3 id="profile-name" class="text-lg font-bold mt-0.5">Resident Name</h3>
+          </div>
+        </div>
+        <button onclick="closeProfileModal()" class="p-1.5 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div id="profile-details-body" class="p-6 space-y-4 text-sm">
+        <!-- Populated dynamically -->
+      </div>
+
+      <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+        <button onclick="closeProfileModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-200 hover:bg-slate-300 text-slate-800 transition">
+          Close Profile
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: DELETE / TRUNCATE CONFIRMATION MODAL (No browser confirm()) -->
+  <div id="confirm-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+      <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mb-4">
+        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+      </div>
+      <h3 id="confirm-title" class="text-base font-bold text-slate-900">Confirm Database Deletion</h3>
+      <p id="confirm-message" class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+        Are you sure you want to delete this record? This action will execute a SQL DELETE query.
+      </p>
+      <div class="mt-5 flex items-center justify-end gap-2.5">
+        <button onclick="closeConfirmModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+          Cancel
+        </button>
+        <button id="confirm-action-btn" class="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white shadow-sm transition">
+          Confirm Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: PBL ACTIVITY & STUDENT DETAILS MODAL -->
+  <div id="about-modal" class="fixed inset-0 z-40 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="px-6 py-4 bg-indigo-600 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+          <h3 class="text-base font-bold">DBMS PBL Activity Submission Details</h3>
+        </div>
+        <button onclick="closeAboutModal()" class="p-1.5 rounded-xl text-white/80 hover:text-white hover:bg-white/10">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="p-6 space-y-3 text-xs">
+        <div class="grid grid-cols-3 py-2 border-b border-slate-100">
+          <span class="text-slate-500 font-medium">Student Name</span>
+          <span class="col-span-2 font-bold text-slate-900">Dakshkumar Pareshbhai Patel</span>
+        </div>
+        <div class="grid grid-cols-3 py-2 border-b border-slate-100">
+          <span class="text-slate-500 font-medium">Enrollment No.</span>
+          <span class="col-span-2 font-mono font-bold text-indigo-600">250020107055</span>
+        </div>
+        <div class="grid grid-cols-3 py-2 border-b border-slate-100">
+          <span class="text-slate-500 font-medium">Sr. No. & Class</span>
+          <span class="col-span-2 font-semibold text-slate-800">Sr. No. 50 &bull; Semester 3rd CE-1</span>
+        </div>
+        <div class="grid grid-cols-3 py-2 border-b border-slate-100">
+          <span class="text-slate-500 font-medium">Subject & Code</span>
+          <span class="col-span-2 font-semibold text-slate-800">Database Management System (BE03000091)</span>
+        </div>
+        <div class="grid grid-cols-3 py-2 border-b border-slate-100">
+          <span class="text-slate-500 font-medium">Project Title</span>
+          <span class="col-span-2 font-bold text-slate-900">Apartment Resident Management</span>
+        </div>
+        <div class="grid grid-cols-3 py-2 border-b border-slate-100">
+          <span class="text-slate-500 font-medium">Faculty Guide</span>
+          <span class="col-span-2 font-semibold text-slate-800">Prof. Khushbuben Oza</span>
+        </div>
+        <div class="pt-2">
+          <span class="text-slate-500 font-medium block mb-1">Project Scope:</span>
+          <p class="text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+            Register apartment residents and maintain their personal and contact details with complete CRUD operations, primary/unique key validation, live SQL query audit logging, and 3NF relational schema visualization.
+          </p>
+        </div>
+      </div>
+      <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end">
+        <button onclick="closeAboutModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script>
+    // Storage Keys
+    const STORAGE_KEY_RESIDENTS = 'dbms_pbl_residents_250020107055';
+    const STORAGE_KEY_LOGS = 'dbms_pbl_sql_logs_250020107055';
+
+    // Default Pre-populated Sample Dataset
+    const DEFAULT_RESIDENTS = [
+      {
+        resident_id: 'RES-101',
+        full_name: 'Aarav Sharma',
+        flat_number: 'A-101',
+        block_wing: 'Block A',
+        resident_type: 'Owner',
+        phone_number: '9825011401',
+        email_address: 'aarav.sharma@gmail.com',
+        family_members: 4,
+        vehicle_number: 'GJ-01-RS-4521',
+        move_in_date: '2023-04-15',
+        emergency_contact: '9825011499',
+        status: 'Active'
+      },
+      {
+        resident_id: 'RES-102',
+        full_name: 'Priya Nair',
+        flat_number: 'B-204',
+        block_wing: 'Block B',
+        resident_type: 'Tenant',
+        phone_number: '9879022310',
+        email_address: 'priya.nair@outlook.com',
+        family_members: 3,
+        vehicle_number: 'GJ-01-KL-8890',
+        move_in_date: '2024-08-01',
+        emergency_contact: '9879022399',
+        status: 'Active'
+      },
+      {
+        resident_id: 'RES-103',
+        full_name: 'Rohan Desai',
+        flat_number: 'A-302',
+        block_wing: 'Block A',
+        resident_type: 'Owner',
+        phone_number: '9909933105',
+        email_address: 'rohan.desai@yahoo.in',
+        family_members: 5,
+        vehicle_number: 'GJ-01-RD-1008',
+        move_in_date: '2022-11-20',
+        emergency_contact: '9909933188',
+        status: 'Active'
+      },
+      {
+        resident_id: 'RES-104',
+        full_name: 'Meera Joshi',
+        flat_number: 'C-105',
+        block_wing: 'Block C',
+        resident_type: 'Owner',
+        phone_number: '9426044812',
+        email_address: 'meera.joshi@gmail.com',
+        family_members: 2,
+        vehicle_number: 'GJ-01-MJ-3319',
+        move_in_date: '2023-01-10',
+        emergency_contact: '9426044800',
+        status: 'Active'
+      },
+      {
+        resident_id: 'RES-105',
+        full_name: 'Vikramaditya Mehta',
+        flat_number: 'D-401',
+        block_wing: 'Block D',
+        resident_type: 'Tenant',
+        phone_number: '9898055621',
+        email_address: 'vikram.mehta@gmail.com',
+        family_members: 4,
+        vehicle_number: 'GJ-01-VM-7744',
+        move_in_date: '2024-02-14',
+        emergency_contact: '9898055699',
+        status: 'Moved Out'
+      },
+      {
+        resident_id: 'RES-106',
+        full_name: 'Kavita Patel',
+        flat_number: 'B-303',
+        block_wing: 'Block B',
+        resident_type: 'Owner',
+        phone_number: '9727066734',
+        email_address: 'kavita.patel@gmail.com',
+        family_members: 4,
+        vehicle_number: 'GJ-01-KP-5512',
+        move_in_date: '2021-07-05',
+        emergency_contact: '9727066700',
+        status: 'Active'
+      }
+    ];
+
+    // State
+    let residents = [];
+    let sqlLogs = [];
+
+    // Initialize Application
+    document.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      lucide.createIcons();
+      renderAll();
+    });
+
+    // Load from localStorage or seed initial demo data
+    function loadState() {
+      const savedResidents = localStorage.getItem(STORAGE_KEY_RESIDENTS);
+      const savedLogs = localStorage.getItem(STORAGE_KEY_LOGS);
+
+      if (savedResidents) {
+        try {
+          residents = JSON.parse(savedResidents);
+        } catch (e) {
+          residents = [...DEFAULT_RESIDENTS];
+        }
+      } else {
+        residents = [...DEFAULT_RESIDENTS];
+        saveResidents();
+      }
+
+      if (savedLogs) {
+        try {
+          sqlLogs = JSON.parse(savedLogs);
+        } catch (e) {
+          sqlLogs = [];
+        }
+      }
+
+      if (sqlLogs.length === 0) {
+        logSQLQuery(
+          'SELECT * FROM residents ORDER BY resident_id ASC;',
+          'READ',
+          `${residents.length} rows fetched`
+        );
+      }
+    }
+
+    function saveResidents() {
+      localStorage.setItem(STORAGE_KEY_RESIDENTS, JSON.stringify(residents));
+    }
+
+    function saveLogs() {
+      localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(sqlLogs));
+    }
+
+    // Log SQL Query into live console
+    function logSQLQuery(query, operationType = 'READ', resultInfo = 'OK') {
+      const now = new Date();
+      const timestamp = now.toTimeString().split(' ')[0];
+      const execTime = (Math.random() * 0.004 + 0.001).toFixed(4) + ' sec';
+
+      const entry = {
+        id: Date.now() + Math.random(),
+        timestamp,
+        operationType,
+        query,
+        execTime,
+        resultInfo
+      };
+
+      sqlLogs.unshift(entry);
+      if (sqlLogs.length > 60) sqlLogs.pop();
+      saveLogs();
+
+      const miniPreview = document.getElementById('mini-sql-preview');
+      if (miniPreview) miniPreview.textContent = query;
+
+      const badge = document.getElementById('sql-count-badge');
+      if (badge) badge.textContent = sqlLogs.length;
+
+      renderSqlLogs();
+    }
+
+    // Master Render
+    function renderAll() {
+      updateKPIs();
+      handleSearchAndFilter(false);
+      renderSqlLogs();
+      renderAnalytics();
+      lucide.createIcons();
+    }
+
+    // Update Top KPI Cards
+    function updateKPIs() {
+      const total = residents.length;
+      const activeList = residents.filter(r => r.status === 'Active');
+      const activeCount = activeList.length;
+      const totalFamily = activeList.reduce((acc, r) => acc + Number(r.family_members || 0), 0);
+      const owners = residents.filter(r => r.resident_type === 'Owner').length;
+      const tenants = residents.filter(r => r.resident_type === 'Tenant').length;
+      const vehicles = residents.filter(r => r.vehicle_number && r.vehicle_number.trim() !== '').length;
+
+      document.getElementById('kpi-total').textContent = total;
+      document.getElementById('nav-count-badge').textContent = total;
+      document.getElementById('kpi-active').textContent = activeCount;
+      document.getElementById('kpi-family-members').textContent = `${totalFamily} total family members`;
+      document.getElementById('kpi-ratio').textContent = `${owners} / ${tenants}`;
+      document.getElementById('kpi-vehicles').textContent = vehicles;
+      document.getElementById('sql-count-badge').textContent = sqlLogs.length;
+    }
+
+    // Filter & Search Logic
+    function handleSearchAndFilter(shouldLogQuery = false) {
+      const searchTerm = document.getElementById('search-input').value.trim().toLowerCase();
+      const blockFilter = document.getElementById('filter-block').value;
+      const typeFilter = document.getElementById('filter-type').value;
+      const statusFilter = document.getElementById('filter-status').value;
+
+      const filtered = residents.filter(r => {
+        const matchesSearch =
+          !searchTerm ||
+          r.resident_id.toLowerCase().includes(searchTerm) ||
+          r.full_name.toLowerCase().includes(searchTerm) ||
+          r.flat_number.toLowerCase().includes(searchTerm) ||
+          r.phone_number.includes(searchTerm);
+
+        const matchesBlock = blockFilter === 'ALL' || r.block_wing === blockFilter;
+        const matchesType = typeFilter === 'ALL' || r.resident_type === typeFilter;
+        const matchesStatus = statusFilter === 'ALL' || r.status === statusFilter;
+
+        return matchesSearch && matchesBlock && matchesType && matchesStatus;
+      });
+
+      document.getElementById('filter-result-label').textContent =
+        `Showing ${filtered.length} of ${residents.length} rows`;
+
+      renderResidentsTable(filtered);
+
+      if (shouldLogQuery) {
+        const conditions = [];
+        if (blockFilter !== 'ALL') conditions.push(`block_wing = '${blockFilter}'`);
+        if (typeFilter !== 'ALL') conditions.push(`resident_type = '${typeFilter}'`);
+        if (statusFilter !== 'ALL') conditions.push(`status = '${statusFilter}'`);
+        if (searchTerm) conditions.push(`(full_name LIKE '%${searchTerm}%' OR flat_number LIKE '%${searchTerm}%')`);
+
+        const whereClause = conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : '';
+        logSQLQuery(
+          `SELECT * FROM residents${whereClause} ORDER BY resident_id ASC;`,
+          'SELECT',
+          `${filtered.length} row(s) returned`
+        );
+      }
+    }
+
+    // Render Table Rows
+    function renderResidentsTable(list) {
+      const tbody = document.getElementById('residents-table-body');
+      const emptyState = document.getElementById('empty-state');
+
+      if (list.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        lucide.createIcons();
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      tbody.innerHTML = list.map(r => {
+        const typeBadge = r.resident_type === 'Owner'
+          ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">Owner</span>`
+          : `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">Tenant</span>`;
+
+        const statusBadge = r.status === 'Active'
+          ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Active</span>`
+          : `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200"><span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>Moved Out</span>`;
+
+        const vehicleDisplay = r.vehicle_number
+          ? `<span class="font-mono text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">${escapeHtml(r.vehicle_number)}</span>`
+          : `<span class="text-xs text-slate-400 italic">No vehicle</span>`;
+
+        return `
+          <tr class="hover:bg-slate-50/90 transition group">
+            <td class="py-3.5 px-4 font-mono text-xs font-bold text-indigo-600 whitespace-nowrap">
+              ${escapeHtml(r.resident_id)}
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="font-semibold text-slate-900">${escapeHtml(r.full_name)}</div>
+              <div class="text-xs text-slate-500">Moved in: ${escapeHtml(r.move_in_date)}</div>
+            </td>
+            <td class="py-3.5 px-4 whitespace-nowrap">
+              <div class="font-mono text-xs font-bold text-slate-800">${escapeHtml(r.flat_number)}</div>
+              <div class="text-xs text-slate-500">${escapeHtml(r.block_wing)}</div>
+            </td>
+            <td class="py-3.5 px-4 whitespace-nowrap">
+              ${typeBadge}
+            </td>
+            <td class="py-3.5 px-4 whitespace-nowrap">
+              <div class="font-mono text-xs text-slate-800">${escapeHtml(r.phone_number)}</div>
+              <div class="text-xs text-slate-500 truncate max-w-[160px]">${escapeHtml(r.email_address || '—')}</div>
+            </td>
+            <td class="py-3.5 px-4 whitespace-nowrap">
+              <div class="text-xs text-slate-700 font-medium mb-1">${r.family_members} Members</div>
+              ${vehicleDisplay}
+            </td>
+            <td class="py-3.5 px-4 whitespace-nowrap">
+              ${statusBadge}
+            </td>
+            <td class="py-3.5 px-4 text-right whitespace-nowrap no-print">
+              <div class="inline-flex items-center gap-1">
+                <button onclick="viewResidentProfile('${escapeHtml(r.resident_id)}')" title="View Details" class="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition">
+                  <i data-lucide="eye" class="w-4 h-4"></i>
+                </button>
+                <button onclick="openModalForEdit('${escapeHtml(r.resident_id)}')" title="Edit Record" class="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition">
+                  <i data-lucide="pencil" class="w-4 h-4"></i>
+                </button>
+                <button onclick="confirmDeleteResident('${escapeHtml(r.resident_id)}')" title="Delete Record" class="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    // Generate Next Resident ID
+    function generateNextResidentId() {
+      if (residents.length === 0) return 'RES-101';
+      let maxNum = 100;
+      residents.forEach(r => {
+        const match = r.resident_id.match(/(\d+)/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxNum) maxNum = num;
+        }
+      });
+      return `RES-${maxNum + 1}`;
+    }
+
+    // Modal Controls: Create
+    function openModalForCreate() {
+      document.getElementById('resident-form').reset();
+      document.getElementById('edit-mode-id').value = '';
+      document.getElementById('field-id').value = generateNextResidentId();
+      document.getElementById('field-id').readOnly = false;
+      document.getElementById('field-id').classList.remove('bg-slate-100', 'text-slate-500');
+      document.getElementById('field-date').value = new Date().toISOString().split('T')[0];
+
+      document.getElementById('modal-title').textContent = 'Register New Apartment Resident';
+      document.getElementById('modal-subtitle').innerHTML = 'Executes <code class="font-mono text-indigo-600">INSERT INTO residents</code> with PK/UNIQUE checks';
+      document.getElementById('submit-btn-label').textContent = 'Insert Resident Record';
+
+      document.getElementById('resident-modal').classList.remove('hidden');
+    }
+
+    // Modal Controls: Edit
+    function openModalForEdit(residentId) {
+      const resident = residents.find(r => r.resident_id === residentId);
+      if (!resident) return;
+
+      document.getElementById('edit-mode-id').value = resident.resident_id;
+      document.getElementById('field-id').value = resident.resident_id;
+      document.getElementById('field-id').readOnly = true;
+      document.getElementById('field-id').classList.add('bg-slate-100', 'text-slate-500');
+
+      document.getElementById('field-name').value = resident.full_name;
+      document.getElementById('field-block').value = resident.block_wing;
+      document.getElementById('field-flat').value = resident.flat_number;
+      document.getElementById('field-type').value = resident.resident_type;
+      document.getElementById('field-phone').value = resident.phone_number;
+      document.getElementById('field-email').value = resident.email_address || '';
+      document.getElementById('field-family').value = resident.family_members;
+      document.getElementById('field-vehicle').value = resident.vehicle_number || '';
+      document.getElementById('field-date').value = resident.move_in_date;
+      document.getElementById('field-emergency').value = resident.emergency_contact;
+      document.getElementById('field-status').value = resident.status;
+
+      document.getElementById('modal-title').textContent = `Update Resident (${resident.resident_id})`;
+      document.getElementById('modal-subtitle').innerHTML = `Executes <code class="font-mono text-amber-600">UPDATE residents WHERE resident_id = '${resident.resident_id}'</code>`;
+      document.getElementById('submit-btn-label').textContent = 'Update Record';
+
+      document.getElementById('resident-modal').classList.remove('hidden');
+    }
+
+    function closeResidentModal() {
+      document.getElementById('resident-modal').classList.add('hidden');
+    }
+
+    // Handle Create & Update Submission with DBMS Constraint Validation
+    function handleFormSubmit(event) {
+      event.preventDefault();
+
+      const editId = document.getElementById('edit-mode-id').value;
+      const resident_id = document.getElementById('field-id').value.trim().toUpperCase();
+      const full_name = document.getElementById('field-name').value.trim();
+      const block_wing = document.getElementById('field-block').value;
+      const flat_number = document.getElementById('field-flat').value.trim().toUpperCase();
+      const resident_type = document.getElementById('field-type').value;
+      const phone_number = document.getElementById('field-phone').value.trim();
+      const email_address = document.getElementById('field-email').value.trim();
+      const family_members = parseInt(document.getElementById('field-family').value, 10);
+      const vehicle_number = document.getElementById('field-vehicle').value.trim().toUpperCase();
+      const move_in_date = document.getElementById('field-date').value;
+      const emergency_contact = document.getElementById('field-emergency').value.trim();
+      const status = document.getElementById('field-status').value;
+
+      // Primary Key Constraint Check on INSERT
+      if (!editId) {
+        const duplicatePK = residents.some(r => r.resident_id.toLowerCase() === resident_id.toLowerCase());
+        if (duplicatePK) {
+          showToast(`DBMS Error 1062: Duplicate entry '${resident_id}' for PRIMARY KEY 'resident_id'`, 'error');
+          return;
+        }
+      }
+
+      // UNIQUE Constraint Check on Phone Number
+      const duplicatePhone = residents.some(
+        r => r.phone_number === phone_number && r.resident_id !== editId
+      );
+      if (duplicatePhone) {
+        showToast(`DBMS Error 1062: Duplicate entry '${phone_number}' for UNIQUE key 'phone_number'`, 'error');
+        return;
+      }
+
+      const recordObj = {
+        resident_id,
+        full_name,
+        flat_number,
+        block_wing,
+        resident_type,
+        phone_number,
+        email_address,
+        family_members,
+        vehicle_number,
+        move_in_date,
+        emergency_contact,
+        status
+      };
+
+      if (editId) {
+        // UPDATE operation
+        const idx = residents.findIndex(r => r.resident_id === editId);
+        if (idx !== -1) {
+          residents[idx] = recordObj;
+          saveResidents();
+          logSQLQuery(
+            `UPDATE residents SET full_name = '${full_name}', flat_number = '${flat_number}', block_wing = '${block_wing}', resident_type = '${resident_type}', phone_number = '${phone_number}', family_members = ${family_members}, status = '${status}' WHERE resident_id = '${resident_id}';`,
+            'UPDATE',
+            '1 row affected'
+          );
+          showToast(`Updated resident ${full_name} (${resident_id})`, 'success');
+        }
+      } else {
+        // INSERT operation
+        residents.unshift(recordObj);
+        saveResidents();
+        logSQLQuery(
+          `INSERT INTO residents (resident_id, full_name, flat_number, block_wing, resident_type, phone_number, family_members, vehicle_number, move_in_date, status) VALUES ('${resident_id}', '${full_name}', '${flat_number}', '${block_wing}', '${resident_type}', '${phone_number}', ${family_members}, ${vehicle_number ? `'${vehicle_number}'` : 'NULL'}, '${move_in_date}', '${status}');`,
+          'INSERT',
+          '1 row inserted'
+        );
+        showToast(`Registered ${full_name} (${resident_id}) successfully!`, 'success');
+      }
+
+      closeResidentModal();
+      renderAll();
+    }
+
+    // View Full Resident Profile Modal
+    function viewResidentProfile(residentId) {
+      const r = residents.find(item => item.resident_id === residentId);
+      if (!r) return;
+
+      logSQLQuery(
+        `SELECT * FROM residents WHERE resident_id = '${r.resident_id}' LIMIT 1;`,
+        'SELECT',
+        '1 row fetched'
+      );
+
+      const initials = r.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      document.getElementById('profile-avatar').textContent = initials;
+      document.getElementById('profile-id-badge').textContent = `${r.resident_id} • ${r.resident_type}`;
+      document.getElementById('profile-name').textContent = r.full_name;
+
+      document.getElementById('profile-details-body').innerHTML = `
+        <div class="grid grid-cols-2 gap-3">
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+            <span class="text-[11px] text-slate-400 uppercase font-semibold">Flat & Wing</span>
+            <p class="font-bold text-slate-900 mt-0.5">${escapeHtml(r.flat_number)} (${escapeHtml(r.block_wing)})</p>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+            <span class="text-[11px] text-slate-400 uppercase font-semibold">Status</span>
+            <p class="font-bold mt-0.5 ${r.status === 'Active' ? 'text-emerald-600' : 'text-slate-600'}">${escapeHtml(r.status)}</p>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+            <span class="text-[11px] text-slate-400 uppercase font-semibold">Phone Number</span>
+            <p class="font-mono font-semibold text-slate-900 mt-0.5">${escapeHtml(r.phone_number)}</p>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+            <span class="text-[11px] text-slate-400 uppercase font-semibold">Emergency Contact</span>
+            <p class="font-mono font-semibold text-rose-600 mt-0.5">${escapeHtml(r.emergency_contact)}</p>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 col-span-2">
+            <span class="text-[11px] text-slate-400 uppercase font-semibold">Email Address</span>
+            <p class="font-medium text-slate-800 mt-0.5">${escapeHtml(r.email_address || 'Not Provided')}</p>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+            <span class="text-[11px] text-slate-400 uppercase font-semibold">Family Members</span>
+            <p class="font-bold text-slate-900 mt-0.5">${r.family_members} Persons</p>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+            <span class="text-[11px] text-slate-400 uppercase font-semibold">Vehicle Number</span>
+            <p class="font-mono font-semibold text-slate-900 mt-0.5">${escapeHtml(r.vehicle_number || 'None')}</p>
+          </div>
+        </div>
+        <div class="text-xs text-slate-500 pt-1">
+          Move-in Date: <strong class="text-slate-700">${escapeHtml(r.move_in_date)}</strong>
+        </div>
+      `;
+
+      document.getElementById('profile-modal').classList.remove('hidden');
+    }
+
+    function closeProfileModal() {
+      document.getElementById('profile-modal').classList.add('hidden');
+    }
+
+    // Confirm Delete Single Resident
+    function confirmDeleteResident(residentId) {
+      const resident = residents.find(r => r.resident_id === residentId);
+      if (!resident) return;
+
+      document.getElementById('confirm-title').textContent = `Delete Record ${resident.resident_id}?`;
+      document.getElementById('confirm-message').innerHTML =
+        `You are about to remove <strong>${escapeHtml(resident.full_name)}</strong> (Flat ${escapeHtml(resident.flat_number)}). This executes <code class="font-mono text-rose-600">DELETE FROM residents WHERE resident_id = '${resident.resident_id}';</code>`;
+
+      const actionBtn = document.getElementById('confirm-action-btn');
+      actionBtn.onclick = () => {
+        residents = residents.filter(r => r.resident_id !== residentId);
+        saveResidents();
+        logSQLQuery(
+          `DELETE FROM residents WHERE resident_id = '${residentId}';`,
+          'DELETE',
+          '1 row deleted'
+        );
+        closeConfirmModal();
+        renderAll();
+        showToast(`Deleted resident ${residentId}`, 'info');
+      };
+
+      document.getElementById('confirm-modal').classList.remove('hidden');
+    }
+
+    // Confirm Truncate All Records
+    function confirmClearAll() {
+      document.getElementById('confirm-title').textContent = 'Truncate Entire Residents Table?';
+      document.getElementById('confirm-message').innerHTML =
+        `This will delete all <strong>${residents.length}</strong> records from the table using <code class="font-mono text-rose-600">TRUNCATE TABLE residents;</code>. You can restore demo records anytime.`;
+
+      const actionBtn = document.getElementById('confirm-action-btn');
+      actionBtn.onclick = () => {
+        residents = [];
+        saveResidents();
+        logSQLQuery('TRUNCATE TABLE residents;', 'DDL/TRUNCATE', 'Table emptied');
+        closeConfirmModal();
+        renderAll();
+        showToast('All resident records cleared', 'info');
+      };
+
+      document.getElementById('confirm-modal').classList.remove('hidden');
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirm-modal').classList.add('hidden');
+    }
+
+    // Reset Sample Data
+    function resetSampleData() {
+      residents = JSON.parse(JSON.stringify(DEFAULT_RESIDENTS));
+      saveResidents();
+      document.getElementById('search-input').value = '';
+      document.getElementById('filter-block').value = 'ALL';
+      document.getElementById('filter-type').value = 'ALL';
+      document.getElementById('filter-status').value = 'ALL';
+
+      logSQLQuery(
+        `SOURCE seed_apartment_residents.sql; -- Inserted ${residents.length} sample tuples`,
+        'SEED',
+        `${residents.length} rows restored`
+      );
+      renderAll();
+      showToast('Restored 6 default Indian apartment resident records', 'success');
+    }
+
+    // Render Live SQL Console Logs
+    function renderSqlLogs() {
+      const container = document.getElementById('sql-log-container');
+      if (!container) return;
+
+      if (sqlLogs.length === 0) {
+        container.innerHTML = `<div class="text-slate-500 italic">-- No SQL queries logged yet. Perform any CRUD or filter action to view live statements.</div>`;
+        return;
+      }
+
+      container.innerHTML = sqlLogs.map(log => {
+        let badgeColor = 'bg-sky-500/20 text-sky-300 border-sky-500/30';
+        if (log.operationType === 'INSERT' || log.operationType === 'SEED') badgeColor = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+        if (log.operationType === 'UPDATE') badgeColor = 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+        if (log.operationType === 'DELETE' || log.operationType === 'DDL/TRUNCATE') badgeColor = 'bg-rose-500/20 text-rose-300 border-rose-500/30';
+
+        return `
+          <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800/90 hover:border-slate-700 transition">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${badgeColor}">${log.operationType}</span>
+                <span class="text-slate-500 text-[11px]">[${log.timestamp}]</span>
+              </div>
+              <span class="text-slate-400 text-[11px]">${log.resultInfo} (${log.execTime})</span>
+            </div>
+            <div class="text-emerald-400 leading-relaxed break-all">${escapeHtml(log.query)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function runCustomDemoQuery(query) {
+      logSQLQuery(query, 'AGGREGATE', `${residents.length} rows scanned`);
+      showToast('Executed SQL query in console', 'success');
+    }
+
+    function clearSqlLogs() {
+      sqlLogs = [];
+      saveLogs();
+      updateKPIs();
+      renderSqlLogs();
+      showToast('SQL console history cleared', 'info');
+    }
+
+    // Render Analytics Charts
+    function renderAnalytics() {
+      const blocks = ['Block A', 'Block B', 'Block C', 'Block D'];
+      const total = residents.length || 1;
+      const blockContainer = document.getElementById('block-chart-container');
+
+      blockContainer.innerHTML = blocks.map(block => {
+        const count = residents.filter(r => r.block_wing === block).length;
+        const pct = Math.round((count / total) * 100);
+        return `
+          <div>
+            <div class="flex justify-between text-xs font-semibold mb-1.5">
+              <span class="text-slate-700">${block}</span>
+              <span class="font-mono text-indigo-600">${count} Residents (${pct}%)</span>
+            </div>
+            <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full bg-indigo-600 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const owners = residents.filter(r => r.resident_type === 'Owner').length;
+      const tenants = residents.filter(r => r.resident_type === 'Tenant').length;
+      const active = residents.filter(r => r.status === 'Active').length;
+      const movedOut = residents.filter(r => r.status === 'Moved Out').length;
+
+      const ownerPct = Math.round((owners / total) * 100);
+      const tenantPct = Math.round((tenants / total) * 100);
+      const activePct = Math.round((active / total) * 100);
+
+      document.getElementById('type-chart-container').innerHTML = `
+        <div>
+          <div class="flex justify-between text-xs font-semibold mb-1.5">
+            <span class="text-indigo-700">Flat Owners</span>
+            <span class="font-mono">${owners} (${ownerPct}%)</span>
+          </div>
+          <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+            <div class="h-full bg-indigo-600 rounded-full" style="width: ${ownerPct}%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between text-xs font-semibold mb-1.5">
+            <span class="text-amber-700">Tenants / Renters</span>
+            <span class="font-mono">${tenants} (${tenantPct}%)</span>
+          </div>
+          <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+            <div class="h-full bg-amber-500 rounded-full" style="width: ${tenantPct}%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between text-xs font-semibold mb-1.5">
+            <span class="text-emerald-700">Active Occupancy Rate (${active} Active / ${movedOut} Moved Out)</span>
+            <span class="font-mono">${activePct}%</span>
+          </div>
+          <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+            <div class="h-full bg-emerald-500 rounded-full" style="width: ${activePct}%"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Tab Navigation Switching
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`view-${tabName}`).classList.remove('hidden');
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-indigo-600', 'text-indigo-600', 'font-semibold');
+        btn.classList.add('border-transparent', 'text-slate-500', 'font-medium');
+      });
+
+      const activeBtn = document.getElementById(`tab-${tabName}`);
+      activeBtn.classList.remove('border-transparent', 'text-slate-500', 'font-medium');
+      activeBtn.classList.add('border-indigo-600', 'text-indigo-600', 'font-semibold');
+
+      if (tabName === 'analytics') renderAnalytics();
+      lucide.createIcons();
+    }
+
+    // Export CSV
+    function exportToCSV() {
+      if (residents.length === 0) {
+        showToast('No records available to export', 'error');
+        return;
+      }
+      const headers = ['resident_id', 'full_name', 'flat_number', 'block_wing', 'resident_type', 'phone_number', 'email_address', 'family_members', 'vehicle_number', 'move_in_date', 'emergency_contact', 'status'];
+      const csvRows = [
+        headers.join(','),
+        ...residents.map(r => headers.map(h => `"${String(r[h] ?? '').replace(/"/g, '""')}"`).join(','))
+      ];
+      const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      downloadBlob(blob, 'apartment_residents_250020107055.csv');
+      logSQLQuery("SELECT * FROM residents INTO OUTFILE 'apartment_residents.csv' FIELDS TERMINATED BY ',';", 'EXPORT', `${residents.length} rows exported`);
+      showToast('Exported resident table to CSV', 'success');
+    }
+
+    // Export JSON
+    function exportToJSON() {
+      if (residents.length === 0) {
+        showToast('No records available to export', 'error');
+        return;
+      }
+      const payload = {
+        metadata: {
+          project: 'Apartment Resident Management',
+          subject: 'Database Management System (BE03000091)',
+          student: 'Dakshkumar Pareshbhai Patel',
+          enrollment_no: '250020107055',
+          faculty: 'Prof. Khushbuben Oza',
+          exported_at: new Date().toISOString()
+        },
+        residents
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      downloadBlob(blob, 'apartment_residents_250020107055.json');
+      showToast('Exported database dump to JSON', 'success');
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Copy SQL DDL Script (iFrame-safe textarea fallback)
+    function copyDDLScript() {
+      const ddlText = document.getElementById('ddl-code-block').textContent;
+      const textarea = document.createElement('textarea');
+      textarea.value = ddlText;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast('SQL DDL Schema copied to clipboard!', 'success');
+      } catch (err) {
+        showToast('Could not copy DDL script', 'error');
+      }
+      document.body.removeChild(textarea);
+    }
+
+    // About Modal Controls
+    function openAboutModal() {
+      document.getElementById('about-modal').classList.remove('hidden');
+    }
+
+    function closeAboutModal() {
+      document.getElementById('about-modal').classList.add('hidden');
+    }
+
+    // Toast Notification Helper
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+
+      let colors = 'bg-slate-900 text-white border-slate-700';
+      let icon = 'check-circle-2';
+      if (type === 'error') {
+        colors = 'bg-rose-600 text-white border-rose-500';
+        icon = 'alert-circle';
+      } else if (type === 'info') {
+        colors = 'bg-indigo-600 text-white border-indigo-500';
+        icon = 'info';
+      }
+
+      toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg border text-xs font-medium transition-all duration-300 ${colors}`;
+      toast.innerHTML = `
+        <i data-lucide="${icon}" class="w-4 h-4 shrink-0"></i>
+        <span class="leading-snug">${escapeHtml(message)}</span>
+      `;
+
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-6px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3400);
+    }
+
+    // Escape HTML to prevent XSS
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>
